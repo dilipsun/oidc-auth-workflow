@@ -1,5 +1,4 @@
-name: Terraform Deploy
-
+# Reusable workflow: placed in the called repository (e.g. dilipsun/oidc-auth-workflow/.github/workflows/terraform-deploy.yml)
 on:
   workflow_call:
     inputs:
@@ -22,15 +21,10 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     env:
-      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
       ARM_USE_OIDC: true
-
     steps:
-      - name: Checkout caller repo
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Azure Login (OIDC)
@@ -39,6 +33,7 @@ jobs:
           client-id: ${{ secrets.ARM_CLIENT_ID }}
           tenant-id: ${{ secrets.ARM_TENANT_ID }}
           subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          use-oidc: true
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
