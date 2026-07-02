@@ -7,8 +7,9 @@ on:
         type: string
         default: "."
     secrets:
-      ARM_CLIENT_ID:
-        required: true
+      # Optional: pass AZURE_CREDENTIALS JSON to use service principal auth
+      AZURE_CREDENTIALS:
+        required: false
       ARM_TENANT_ID:
         required: true
       ARM_SUBSCRIPTION_ID:
@@ -22,18 +23,25 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
+      # Leave this true to let Terraform/Azure SDK use OIDC when available.
+      # If you pass AZURE_CREDENTIALS, the workflow will use service principal auth instead.
       ARM_USE_OIDC: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Azure Login (OIDC)
+      - name: Azure Login (Service Principal via AZURE_CREDENTIALS)
+        if: ${{ secrets.AZURE_CREDENTIALS != '' }}
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Azure Login (OIDC)
+        if: ${{ secrets.AZURE_CREDENTIALS == '' }}
+        uses: azure/login@v2
+        with:
           tenant-id: ${{ secrets.ARM_TENANT_ID }}
           subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-          use-oidc: true
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
