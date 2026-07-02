@@ -7,6 +7,13 @@ on:
         required: false
         type: string
         default: "."
+    secrets:
+      ARM_CLIENT_ID:
+        required: true
+      ARM_TENANT_ID:
+        required: true
+      ARM_SUBSCRIPTION_ID:
+        required: true
 
 permissions:
   id-token: write
@@ -17,24 +24,26 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
       ARM_USE_OIDC: true
 
     steps:
-      - name: Checkout caller repo (customer repo with TF code)
+      - name: Checkout caller repo
         uses: actions/checkout@v4
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
+          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
 
       - name: Terraform Init
         working-directory: ${{ inputs.working_directory }}
