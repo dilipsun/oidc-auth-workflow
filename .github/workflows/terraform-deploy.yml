@@ -1,15 +1,10 @@
-# Reusable workflow: placed in the called repository (e.g. dilipsun/oidc-auth-workflow/.github/workflows/terraform-deploy.yml)
+name: Terraform Deploy
+
 on:
   workflow_call:
-    inputs:
-      working_directory:
-        required: false
-        type: string
-        default: "."
     secrets:
-      # Optional: pass AZURE_CREDENTIALS JSON to use service principal auth
-      AZURE_CREDENTIALS:
-        required: false
+      ARM_CLIENT_ID:
+        required: true
       ARM_TENANT_ID:
         required: true
       ARM_SUBSCRIPTION_ID:
@@ -23,40 +18,24 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      # Leave this true to let Terraform/Azure SDK use OIDC when available.
-      # If you pass AZURE_CREDENTIALS, the workflow will use service principal auth instead.
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
       ARM_USE_OIDC: true
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Azure Login (Service Principal via AZURE_CREDENTIALS)
-        if: ${{ secrets.AZURE_CREDENTIALS != '' }}
-        uses: azure/login@v2
+      - uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Azure Login (OIDC)
-        if: ${{ secrets.AZURE_CREDENTIALS == '' }}
-        uses: azure/login@v2
-        with:
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
           tenant-id: ${{ secrets.ARM_TENANT_ID }}
           subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.7.0"
+      - uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform Init
-        working-directory: ${{ inputs.working_directory }}
-        run: terraform init
-
-      - name: Terraform Plan
-        working-directory: ${{ inputs.working_directory }}
-        run: terraform plan -out=tfplan
-
-      - name: Terraform Apply
+      - run: terraform init
+      - run: terraform plan -out=tfplan
+      - name: Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        working-directory: ${{ inputs.working_directory }}
         run: terraform apply -auto-approve tfplan
