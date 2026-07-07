@@ -2,6 +2,12 @@ name: Terraform Deploy
 
 on:
   workflow_call:
+    inputs:
+        terraform_version:
+          type: string
+          required: false
+          description: "What version of Terraform to use"
+          default: "1.6.6"
     secrets:
       ARM_CLIENT_ID:
         required: true
